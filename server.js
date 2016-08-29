@@ -1,14 +1,15 @@
 var PORT = process.env.PORT || 3000;
+var moment = require('moment');
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var moment = require('moment');
 
 app.use(express.static(__dirname + '/public'));
 
 var clientInfo = {};
 
+// Sends current users to provided socket
 function sendCurrentUsers (socket) {
     var info = clientInfo[socket.id];
     var users = [];
@@ -38,11 +39,11 @@ io.on('connection', function (socket) {
     socket.on('disconnect', function () {
         var userData = clientInfo[socket.id];
 
-        if (typeof userData != undefined) {
+        if (typeof userData !== 'undefined') {
             socket.leave(userData.room);
-            socket.broadcast.to(userData.room).emit('message', {
+            io.to(userData.room).emit('message', {
                 name: 'System',
-                text: userData.name + ' has left the room.',
+                text: userData.name + ' has left!',
                 timestamp: moment().valueOf()
             });
             delete clientInfo[socket.id];
@@ -54,7 +55,7 @@ io.on('connection', function (socket) {
         socket.join(req.room);
         socket.broadcast.to(req.room).emit('message', {
             name: 'System',
-            text: req.name + ' has joined the room.',
+            text: req.name + ' has joined!',
             timestamp: moment().valueOf()
         });
     });
@@ -62,7 +63,6 @@ io.on('connection', function (socket) {
     socket.on('message', function (message) {
         console.log('Message received: ' + message.text);
 
-        //Intercepting text and running a function or sending a message
         if (message.text === '@currentUsers') {
             sendCurrentUsers(socket);
         } else {
@@ -71,13 +71,15 @@ io.on('connection', function (socket) {
         }
     });
 
+    // timestamp property - JavaScript timestamp (milliseconds)
+
     socket.emit('message', {
-        name: "System",
+        name: 'System',
         text: 'Welcome to the chat application!',
         timestamp: moment().valueOf()
     });
 });
 
 http.listen(PORT, function () {
-    console.log('Server started and running on port: ' + PORT);
+    console.log('Server started!');
 });
